@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pitch Set Composer</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="panel controls" aria-labelledby="app-title">
+        <p class="eyebrow">Computational Sound HW5</p>
+        <h1 id="app-title">Pitch Set Composer</h1>
+        <p class="lede">
+          Generate short WebAudio compositions by transforming a pitch class set with transpose,
+          inverse, and retrograde operations.
+        </p>
+
+        <form id="composer-form">
+          <label for="pitch-set">Initial set input</label>
+          <input id="pitch-set" name="pitch-set" value="0,2,4,7,9" autocomplete="off">
+
+          <div class="control-grid">
+            <label for="steps">
+              Steps
+              <select id="steps" name="steps">
+                <option value="6">6 steps</option>
+                <option value="8">8 steps</option>
+                <option value="12" selected>12 steps</option>
+                <option value="16">16 steps</option>
+                <option value="24">24 steps</option>
+              </select>
+            </label>
+
+            <label for="operation-mix">
+              Operation mix
+              <select id="operation-mix" name="operation-mix">
+                <option value="balanced" selected>Balanced</option>
+                <option value="transpose">Transpose focus</option>
+                <option value="inverse">Inverse focus</option>
+                <option value="retrograde">Retrograde focus</option>
+                <option value="restless">Restless</option>
+              </select>
+            </label>
+          </div>
+
+          <label for="rhythm-feel">
+            Rhythm feel
+            <select id="rhythm-feel" name="rhythm-feel">
+              <option value="steady" selected>Steady pulse</option>
+              <option value="sparse">Sparse phrases</option>
+              <option value="syncopated">Syncopated</option>
+              <option value="rolling">Rolling pattern</option>
+            </select>
+          </label>
+
+          <div class="slider-group">
+            <label for="tempo">
+              <span>Tempo</span>
+              <span id="tempo-value">96 BPM</span>
+            </label>
+            <input id="tempo" name="tempo" type="range" min="50" max="180" value="96">
+          </div>
+
+          <div class="preset-row" aria-label="Tempo presets">
+            <button class="preset-button" type="button" data-tempo="72">Slow</button>
+            <button class="preset-button" type="button" data-tempo="96">Medium</button>
+            <button class="preset-button" type="button" data-tempo="120">Bright</button>
+            <button class="preset-button" type="button" data-tempo="144">Fast</button>
+          </div>
+
+          <div class="curated-presets" aria-label="Curated seed presets">
+            <p class="control-caption">Curated seed presets</p>
+            <div class="preset-row three-up">
+              <button class="preset-button" type="button" data-preset="glass">Glass Canon</button>
+              <button class="preset-button" type="button" data-preset="mirror">Mirror Pulse</button>
+              <button class="preset-button" type="button" data-preset="sparks">Restless Sparks</button>
+            </div>
+          </div>
+
+          <div class="seed-row">
+            <label for="seed">
+              Seed
+              <input id="seed" name="seed" value="first-draft" autocomplete="off">
+            </label>
+            <button id="random-seed-button" class="preset-button" type="button">Random seed preset</button>
+          </div>
+
+          <div class="button-row">
+            <button id="generate-play-button" type="submit">Generate/Play</button>
+            <button id="stop-button" type="button">Stop</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel output" aria-labelledby="sequence-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Generated Sequence</p>
+            <h2 id="sequence-title">Pitch Timeline</h2>
+          </div>
+          <p id="now-playing" class="now-playing">Ready</p>
+        </div>
+
+        <div id="timeline" class="timeline timeline-empty" aria-live="polite">
+          <p class="empty-state">Choose settings, then generate a composition.</p>
+        </div>
+
+        <div id="composition-details" class="details-grid is-hidden">
+          <section>
+            <h3>Operations</h3>
+            <div id="operation-counts" class="count-chips" aria-live="polite"></div>
+            <ol id="operations-list"></ol>
+          </section>
+
+          <section>
+            <h3>Step-by-Step Notes</h3>
+            <div id="process-output" class="process-list" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <article class="panel blog-section" aria-labelledby="blog-title">
+        <p class="eyebrow">Lab 5 Blog</p>
+        <h2 id="blog-title">Automated Composition with Pitch Set Theory</h2>
+
+        <h3>Project Idea</h3>
+        <p>
+          For this lab, I built a small browser instrument that composes from pitch set
+          theory operations. The project starts with a pitch class set, then repeatedly
+          applies transpose, inverse, or retrograde to generate a longer sequence. I liked
+          this approach because the rules are simple enough to understand in code, but the
+          musical results still change a lot depending on the starting set and operation mix.
+        </p>
+
+        <p>
+          I wanted the project to feel less like pressing a random button and more like
+          shaping a small compositional system. The controls let the listener change the
+          initial set, the number of transformation steps, the rhythm feel, the tempo, and
+          the probability balance between operations. Those choices do not write a melody
+          directly, but they influence the behavior of the generator in ways that are easy to
+          hear and compare.
+        </p>
+
+        <h3>Coding the Transformations</h3>
+        <p>
+          Coding the transformations made the theory feel more concrete. Transpose was the
+          most direct: add an interval and use modulo 12 so every note stays inside pitch
+          class space. Inversion was more interesting because it changed the contour of the
+          set without introducing any new pitch class names. Retrograde was technically just
+          reversing an array, but musically it made me notice how much order matters even
+          when the same pitch classes are present.
+        </p>
+
+        <p>
+          The modulo 12 part became one of the most important details in the implementation.
+          Without it, transposing by larger intervals could push pitch classes outside the
+          expected range and make the rest of the program harder to reason about. Keeping
+          everything wrapped into 0 through 11 meant that each operation could stay small and
+          predictable, while the longer sequence still became complex over time.
+        </p>
+
+        <h3>Operation Mixes</h3>
+        <p>
+          The operation mix dropdown changes the probability of each transformation, which
+          changes the personality of the generated piece. Balanced gives transpose, inverse,
+          and retrograde a fairly even chance, so the result moves between interval shifts,
+          contour changes, and reversals. Transpose focus favors moving the set up by random
+          intervals, which tends to make the composition feel more harmonically mobile while
+          keeping the shape of the original set recognizable.
+        </p>
+
+        <p>
+          Inverse focus makes the contour flip more often, so the generated material feels
+          more angular and reflective. Retrograde focus keeps returning to reversed versions
+          of the current set, which makes order and direction more noticeable. Restless gives
+          all three operations strong weights, so the system changes direction more often and
+          produces a less predictable sequence. Adding these mixes made the interface feel
+          more musical because I was not only generating notes, I was choosing a behavior for
+          the algorithm.
+        </p>
+
+        <p>
+          This also made me think about probability as a musical parameter. The operation mix
+          does not guarantee that a specific operation will happen at a specific time; it
+          changes the tendency of the system. That feels closer to composing with constraints
+          than composing with exact instructions. I can ask the program to lean toward
+          inversion or transposition, then listen to how that tendency plays out over the
+          generated sequence.
+        </p>
+
+        <h3>Making the Process Visible</h3>
+        <p>
+          The hardest part was not the pitch math; it was making the generation process feel
+          inspectable. I added a step-by-step notes panel because a plain list of numbers did
+          not explain how the composition was built. Each step now shows the input set, the
+          operation chosen, the resulting set, and how many notes have accumulated for
+          playback. That helped turn the project from a black box into something closer to a
+          musical sketchbook.
+        </p>
+
+        <p>
+          The visualization also helped me debug the project. If the sound seemed confusing,
+          I could look at the timeline and the process cards to see whether the issue came
+          from the pitch set transformations, the rhythm pattern, or the playback scheduling.
+          This was especially helpful after adding highlighting, because I could check that
+          the note being heard matched the note being shown on screen.
+        </p>
+
+        <h3>Scheduling Sound</h3>
+        <p>
+          WebAudio also forced me to think about time differently. The notes are not played
+          one at a time with delays; they are scheduled on the audio clock with oscillator
+          start and stop times. I added a short gain envelope to each note so the sound has a
+          clearer attack and release. Once the sound was scheduled, I had to separately
+          coordinate the visual highlighting so the active pitch block and process step lined
+          up with what the listener was hearing.
+        </p>
+
+        <p>
+          I later added rhythm feels because the first version played every note with the
+          same spacing, which made the melody sound too mechanical. The steady pulse keeps
+          the rhythm even, sparse phrases leave more breathing room, syncopated rhythm places
+          shorter notes against longer gaps, and the rolling pattern creates a more continuous
+          forward motion. Accent marks in the timeline show which notes receive a slightly
+          stronger gain envelope during playback.
+        </p>
+
+        <p>
+          The rhythm system changed the piece more than I expected. When every note had the
+          same duration, the output demonstrated the algorithm but did not always feel like a
+          phrase. Adding gaps, accents, and longer sustained notes made the same pitch data
+          feel more intentional. It showed me that automated composition is not only about
+          choosing pitches; timing is a big part of whether the result feels musical.
+        </p>
+
+        <h3>Seeded Randomness</h3>
+        <p>
+          I also added seeded generation because random composition can be frustrating if a
+          good result disappears forever. The seed makes the randomness repeatable, so the
+          same settings can recreate the same sequence. The curated seed presets are examples
+          I chose to demonstrate different personalities quickly: Glass Canon uses a rolling
+          transpose-heavy sound, Mirror Pulse emphasizes inversion and syncopation, and
+          Restless Sparks uses a faster, less predictable mix. That changed how I thought
+          about the interface: the app is not only a generator, but a way to search through
+          possible compositions and return to the ones that work.
+        </p>
+
+        <p>
+          The presets also make the project easier to explore. A listener can still enter
+          their own pitch set and experiment with the algorithm, but the curated examples
+          provide quick starting points that show the system working in different modes. This
+          felt important because randomness can create interesting surprises, but it can also
+          make it harder to return to a musical result unless the settings are easy to save
+          and repeat.
+        </p>
+
+        <h3>Takeaway</h3>
+        <p>
+          My biggest takeaway is that automated composition is a negotiation between rules
+          and presentation. The pitch set operations create the raw musical material, but the
+          rhythm, octave mapping, playback envelope, and visual feedback all shape whether
+          the result feels intentional. Programming those parts myself made the musical
+          system feel less abstract and much more like an instrument.
+        </p>
+
+        <p>
+          If I continued developing this, I would add more timbral variation and maybe a way
+          to export the generated sequence. Still, this version helped me understand the
+          connection between a theoretical pitch operation and an actual listening
+          experience. The most interesting part was seeing how small functions, like
+          transpose or retrograde, could become the foundation for a full interactive
+          composition tool.
+        </p>
+      </article>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
